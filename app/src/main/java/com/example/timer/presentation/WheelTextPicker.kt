@@ -5,6 +5,7 @@ import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -13,12 +14,18 @@ import androidx.compose.material3.Divider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import com.example.timer.R
 import com.example.timer.secondsToFormattedTime
@@ -35,7 +42,7 @@ fun WheelTimePicker(
     onItemSelected: (selectedTime: Int) -> Unit,
 ) {
     val rowCount = 3
-    val width = 135.dp
+    val width = 150.dp
     val height = 175.dp
 
     val lazyListState = rememberLazyListState(startIndex)
@@ -44,7 +51,7 @@ fun WheelTimePicker(
 
 
     LaunchedEffect(isScrollInProgress) {
-        if(!isScrollInProgress) {
+        if (!isScrollInProgress) {
             onItemSelected(sourceItems[lazyListState.firstVisibleItemIndex])
         }
     }
@@ -58,19 +65,23 @@ fun WheelTimePicker(
             modifier = Modifier
                 .size(width, height / rowCount),
         ) {
-            Divider(modifier = Modifier
-                .width(60.dp)
-                .align(Alignment.TopCenter), color = GrayBlue30, thickness = 2.dp)
+            Divider(
+                modifier = Modifier
+                    .width(60.dp)
+                    .align(Alignment.TopCenter), color = GrayBlue30, thickness = 2.dp
+            )
             Text(
                 modifier = Modifier.align(Alignment.CenterEnd),
-                text = "мин",
+                text = stringResource(R.string.selected_time_postfix_minutes),
                 fontFamily = FontFamily(Font(R.font.open_sans_bold)),
                 fontSize = 16.sp,
                 color = timePickerColor,
             )
-            Divider(modifier = Modifier
-                .width(60.dp)
-                .align(Alignment.BottomCenter), color = GrayBlue30, thickness = 2.dp)
+            Divider(
+                modifier = Modifier
+                    .width(60.dp)
+                    .align(Alignment.BottomCenter), color = GrayBlue30, thickness = 2.dp
+            )
         }
 
         LazyColumn(
@@ -78,10 +89,10 @@ fun WheelTimePicker(
                 .height(height)
                 .width(width),
             state = lazyListState,
-            contentPadding = PaddingValues(vertical = height / rowCount * ((rowCount - 1 )/ 2)),
+            contentPadding = PaddingValues(vertical = height / rowCount * ((rowCount - 1) / 2)),
             flingBehavior = snapBehavior
-        ){
-            items(sourceItems.size){ index ->
+        ) {
+            items(sourceItems.size) { index ->
 
                 Box(
                     modifier = Modifier
@@ -89,13 +100,19 @@ fun WheelTimePicker(
                         .width(width),
                     contentAlignment = Alignment.Center
                 ) {
+                    var multiplier by remember { mutableStateOf(1f) }
                     Text(
                         text = sourceItems[index].secondsToMinutes().toString(),
                         fontFamily = FontFamily(Font(R.font.open_sans_bold)),
-                        fontSize = 42.sp,
+                        fontSize = (42*multiplier).sp,
                         color = timePickerColor,
                         textAlign = TextAlign.Center,
-                        maxLines = 1
+                        maxLines = 1,
+                        onTextLayout = {
+                            if (it.hasVisualOverflow) {
+                                multiplier *= 0.9f
+                            }
+                        }
                     )
                 }
             }

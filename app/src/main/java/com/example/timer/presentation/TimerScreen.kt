@@ -21,7 +21,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.State
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
@@ -29,6 +29,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
@@ -40,6 +41,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.timer.ComposableLifecycle
 import com.example.timer.R
 import com.example.timer.ui.theme.GrayBlue100
 import com.example.timer.ui.theme.GrayBlue70
@@ -49,12 +51,13 @@ import org.koin.androidx.compose.getViewModel
 fun TimerScreen() {
 
     val timerViewModel = getViewModel<TimerViewModel>()
-    val state by timerViewModel.timerState.collectAsStateWithLifecycle(minActiveState = Lifecycle.State.RESUMED)
+    val state =
+        timerViewModel.timerState.collectAsStateWithLifecycle(minActiveState = Lifecycle.State.RESUMED)
 
     ComposableLifecycle { source, event ->
-        when(event){
-            Lifecycle.Event.ON_PAUSE -> timerViewModel.pauseTimer()
-            Lifecycle.Event.ON_RESUME -> timerViewModel.continueTimer()
+        when (event) {
+            Lifecycle.Event.ON_PAUSE -> timerViewModel.stopTimer()
+            Lifecycle.Event.ON_RESUME -> timerViewModel.continueTimerIfNeeded()
             else -> {}
         }
     }
@@ -62,172 +65,111 @@ fun TimerScreen() {
 }
 
 @Composable
-fun Timer(state: TimerState, onToggleTimerButtonCLick: () -> Unit, onStarTimeSelected: (selectedTime: Int) -> Unit){
+fun Timer(
+    state: State<TimerState>,
+    onToggleTimerButtonCLick: () -> Unit,
+    onStarTimeSelected: (selectedTime: Int) -> Unit
+) {
     Box(
         modifier = Modifier.fillMaxSize()
-    ){
+    ) {
         Image(
             modifier = Modifier.fillMaxSize(),
             imageVector = ImageVector.vectorResource(R.drawable.background),
             contentScale = ContentScale.Crop,
-            contentDescription = "background")
+            contentDescription = "background"
+        )
         Column(
-            modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center) {
+            verticalArrangement = Arrangement.Center
+        ) {
 
 
             Text(
                 modifier = Modifier.fillMaxWidth(),
                 textAlign = TextAlign.Center,
-                text = if (state.isRunning) "Таймер установлен" else "Установите таймер",
+                text = if (state.value.isRunning) stringResource(R.string.timer_running_title) else stringResource(
+                    R.string.timer_stopped_title
+                ),
                 fontFamily = FontFamily(Font(R.font.open_sans_bold)),
                 fontSize = 22.sp,
-                color = GrayBlue100)
+                color = GrayBlue100
+            )
 
             Text(
                 modifier = Modifier.fillMaxWidth(),
                 textAlign = TextAlign.Center,
-                text = "Время закончится и цыпа ляжет спать",
+                text = stringResource(R.string.timer_info_subtitle),
                 fontFamily = FontFamily(Font(R.font.open_sans_regular)),
                 fontSize = 12.sp,
-                color = GrayBlue70)
+                color = GrayBlue70
+            )
 
-            Spacer(modifier = Modifier
-                .height(40.dp)
-                .fillMaxWidth())
+            Spacer(
+                modifier = Modifier
+                    .height(40.dp)
+                    .fillMaxWidth()
+            )
 
-            Box{
+            Box {
                 TimerView(state)
-                if(!state.isRunning)
-                {
+                if (!state.value.isRunning) {
                     WheelTimePicker(
                         modifier = Modifier.align(Alignment.Center),
-                        sourceItems = state.timerDurationsInSeconds,
+                        sourceItems = state.value.timerDurationsInSeconds,
                         onItemSelected = onStarTimeSelected,
-                        startIndex = state.timerDurationsInSeconds.indexOf(state.startTime))
+                        startIndex = state.value.timerDurationsInSeconds.indexOf(state.value.startTime)
+                    )
                 }
             }
 
 
-            Spacer(modifier = Modifier
-                .height(76.dp)
-                .fillMaxWidth())
-
-            Button(
+            Spacer(
                 modifier = Modifier
-                    .shadow(
-                        elevation = 10.dp,
-                        spotColor = Color(0x33C93936),
-                        ambientColor = Color(0x33C93936)
-                    )
-                    .height(48.dp)
-                    .padding(0.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor =
-                if(state.isRunning) Color(0xFF00A1E7) else Color(0xFFEB4D4A)),
-                onClick = { onToggleTimerButtonCLick() }) {
+                    .height(76.dp)
+                    .fillMaxWidth()
+            )
 
-                Icon(
-                    modifier = Modifier.size(32.dp),
-                    imageVector = ImageVector.vectorResource(
-                        if(state.isRunning) R.drawable.stop_icon else R.drawable.start_icon), contentDescription = "start button")
-
-                Text(
-                    modifier = Modifier.padding(start = 8.dp),
-                    text = if (state.isRunning) "стоп" else "старт",
-                    fontFamily = FontFamily(Font(R.font.open_sans_bold)),
-                    fontSize = 16.sp)
-            }
-        }
-
-    }
-}
-
-
-@Preview
-@Composable
-fun TimerScreenTest(){
-    Box(
-        modifier = Modifier.fillMaxSize(),
-    ){
-        Column(
-            modifier = Modifier.fillMaxSize().scrollable(rememberScrollState(), orientation = Orientation.Vertical),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
-        ) {
-
-            Text(
-                modifier = Modifier.fillMaxWidth(),
-                textAlign = TextAlign.Center,
-                text = "Установите таймер",
-                fontFamily = FontFamily(Font(R.font.open_sans_bold)),
-                fontSize = 22.sp)
-
-            Text(
-                modifier = Modifier.fillMaxWidth(),
-                textAlign = TextAlign.Center,
-                text = "Время закончится и цыпа ляжет спать",
-                fontFamily = FontFamily(Font(R.font.open_sans_regular)),
-                fontSize = 12.sp)
-
-            Spacer(modifier = Modifier
-                .height(40.dp)
-                .fillMaxWidth())
-
-            Box{
-                TimerView(TimerState())
-                WheelTimePicker(
-                    modifier = Modifier.align(Alignment.Center),
-                    sourceItems = listOf(10, 20, 30),
-                    onItemSelected = {})
-            }
-
-
-            Spacer(modifier = Modifier
-                .height(76.dp)
-                .fillMaxWidth())
-
-            Button(
-                modifier = Modifier
-                    .shadow(
-                        elevation = 10.dp,
-                        spotColor = Color(0x33C93936),
-                        ambientColor = Color(0x33C93936)
-                    )
-                    .height(48.dp)
-                    .padding(0.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFC93936)),
-                onClick = { /*TODO*/ }) {
-
-                Icon(
-                    modifier = Modifier.size(32.dp),
-                    imageVector = ImageVector.vectorResource(R.drawable.start_icon), contentDescription = "start button")
-
-                Text(
-                    modifier = Modifier.padding(start = 8.dp),
-                    text = "старт",
-                    fontFamily = FontFamily(Font(R.font.open_sans_bold)),
-                    fontSize = 16.sp)
-            }
+            ToggleTimerButton(state = state, onToggleTimerButtonCLick = onToggleTimerButtonCLick)
         }
     }
 }
-
 
 @Composable
-fun ComposableLifecycle(
-    lifecycleOwner: LifecycleOwner = LocalLifecycleOwner.current,
-    onEvent: (LifecycleOwner, Lifecycle.Event) -> Unit
-){
-    DisposableEffect(lifecycleOwner){
-        val observer = LifecycleEventObserver { source, event ->
-            onEvent(source, event)
-        }
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
-        }
+fun ToggleTimerButton(modifier: Modifier = Modifier, state: State<TimerState>, onToggleTimerButtonCLick: () -> Unit){
+    Button(
+        modifier = modifier
+            .padding(bottom = 30.dp)
+            .shadow(
+                elevation = 10.dp,
+                spotColor = Color(0x33C93936),
+                ambientColor = Color(0x33C93936)
+            )
+            .height(48.dp),
+        shape = RoundedCornerShape(12.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor =
+            if (state.value.isRunning) Color(0xFF00A1E7) else Color(0xFFEB4D4A)
+        ),
+        onClick = { onToggleTimerButtonCLick() }) {
+
+        Icon(
+            modifier = Modifier.size(32.dp),
+            imageVector = ImageVector.vectorResource(
+                if (state.value.isRunning) R.drawable.stop_icon else R.drawable.start_icon
+            ), contentDescription = "start button"
+        )
+
+        Text(
+            modifier = Modifier.padding(start = 8.dp),
+            text = if (state.value.isRunning) "стоп" else "старт",
+            fontFamily = FontFamily(Font(R.font.open_sans_bold)),
+            fontSize = 16.sp
+        )
     }
 }
+
+

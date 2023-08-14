@@ -77,4 +77,6 @@ dependencies {
     implementation("io.insert-koin:koin-androidx-compose:$koinAndroidComposeVersion")
 
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.6.1")
+
+    implementation("com.google.accompanist:accompanist-systemuicontroller:0.30.1")
 }

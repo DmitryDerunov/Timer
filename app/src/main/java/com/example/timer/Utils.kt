@@ -6,6 +6,6 @@ fun Int.secondsToFormattedTime(): String {
     return "%02d:%02d".format(minutes, remainingSeconds)
 }
 
-fun Int.secondsToMinutes(): Int{
+fun Int.secondsToMinutes(): Int {
     return this / 60
 }

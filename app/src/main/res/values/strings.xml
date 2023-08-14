@@ -1,3 +1,8 @@
 <resources>
     <string name="app_name">Timer</string>
+    <string name="timer_remaining_title">Осталось</string>
+    <string name="timer_running_title">Таймер установлен</string>
+    <string name="timer_stopped_title">Установите таймер</string>
+    <string name="timer_info_subtitle">Время закончится и цыпа ляжет спать</string>
+    <string name="selected_time_postfix_minutes">мин</string>
 </resources>
